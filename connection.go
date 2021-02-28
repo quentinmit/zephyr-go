@@ -49,6 +49,7 @@ type Connection struct {
 	conn    net.PacketConn
 	server  ServerConfig
 	cred    *krb5.Credential
+	keyCh   chan<- *krb5.KeyBlock
 	clock   Clock
 	localIP net.IP
 
@@ -95,13 +96,11 @@ func NewConnectionFull(
 	c := new(Connection)
 	c.conn = conn
 	c.server = server
-	c.cred = cred
 	c.clock = clock
-	var key *krb5.KeyBlock
-	if c.cred != nil {
-		key = c.cred.KeyBlock
-	}
-	c.allNotices = ReadNoticesFromServer(conn, key)
+	keyCh := make(chan *krb5.KeyBlock, 1)
+	c.keyCh = keyCh
+	c.SetCredential(cred)
+	c.allNotices = ReadNoticesFromServer(conn, keyCh)
 	c.notices = make(chan NoticeReaderResult)
 	c.ackTable = make(map[UID]chan NoticeReaderResult)
 
@@ -140,6 +139,14 @@ func (c *Connection) LocalAddr() *net.UDPAddr {
 // Credential returns the credential for this connection.
 func (c *Connection) Credential() *krb5.Credential {
 	return c.cred
+}
+
+// SetCredential updates the credential for this connection.
+func (c *Connection) SetCredential(cred *krb5.Credential) {
+	c.cred = cred
+	if cred != nil {
+		c.keyCh <- c.cred.KeyBlock
+	}
 }
 
 // Close closes the underlying connection.

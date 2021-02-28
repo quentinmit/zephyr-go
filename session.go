@@ -135,6 +135,11 @@ func (s *Session) Credential() *krb5.Credential {
 	return s.conn.Credential()
 }
 
+// SetCredential updates the credential for this session.
+func (s *Session) SetCredential(cred *krb5.Credential) {
+	s.conn.SetCredential(cred)
+}
+
 // Sender returns the user the session is authenticated as.
 func (s *Session) Sender() string {
 	return s.Credential().Client.String()

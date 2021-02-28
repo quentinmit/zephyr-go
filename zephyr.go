@@ -37,6 +37,15 @@ import (
 // default ccache and using the system-wide Hesiod config to find the
 // zephyrds.
 func DialSystemDefault() (*Session, error) {
+	cred, err := SystemDefaultCredential()
+	if err != nil {
+		return nil, err
+	}
+	return Dial(hesiod.NewHesiod(), cred)
+}
+
+// SystemDefaultCredential reads credentials from the default ccache.
+func SystemDefaultCredential() (*krb5.Credential, error) {
 	ctx, err := krb5.NewContext()
 	if err != nil {
 		return nil, err
@@ -55,11 +64,7 @@ func DialSystemDefault() (*Session, error) {
 	if err != nil {
 		return nil, err
 	}
-	cred, err := ctx.GetCredential(ccache, client, service)
-	if err != nil {
-		return nil, err
-	}
-	return Dial(hesiod.NewHesiod(), cred)
+	return ctx.GetCredential(ccache, client, service)
 }
 
 // Dial creates a new Session using the given Hesiod object and

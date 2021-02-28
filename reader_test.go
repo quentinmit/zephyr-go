@@ -111,7 +111,10 @@ func TestReadNoticesFromServer(t *testing.T) {
 			close(readChan)
 		}()
 		mock := zephyrtest.NewMockPacketConn(clientAddr, readChan)
-		out := ReadNoticesFromServer(mock, test.keyblock)
+		keyCh := make(chan *krb5.KeyBlock, 1)
+		keyCh <- test.keyblock
+		close(keyCh)
+		out := ReadNoticesFromServer(mock, keyCh)
 		for ei, expect := range test.expected {
 			if r, ok := <-out; !ok {
 				t.Errorf("%d.%d. Expected notice: %v",
